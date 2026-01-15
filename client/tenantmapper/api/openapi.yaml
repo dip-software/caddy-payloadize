@@ -1,0 +1,1412 @@
+openapi: 3.0.3
+info:
+  description: Service for managing tenants
+  title: Tenant mapper for HSP Logging 2.0
+  version: "1"
+servers:
+- url: http://localhost:8088
+tags:
+- description: Key management
+  name: key
+- description: Service for application status
+  name: status
+- description: Manage tenants
+  name: tenant
+paths:
+  /health:
+    get:
+      description: Check service health
+      operationId: status#health
+      responses:
+        "200":
+          content:
+            application/json:
+              example: Dolorum laborum molestiae ut.
+              schema:
+                example: Aut odit perferendis.
+                type: string
+          description: OK response.
+      summary: health status
+      tags:
+      - status
+  /key:
+    post:
+      description: Create a new tenant key
+      operationId: key#create
+      parameters:
+      - description: Name of the tenant
+        example: foo
+        explode: false
+        in: header
+        name: X-Scope-OrgID
+        required: true
+        schema:
+          description: Name of the tenant
+          example: foo
+          type: string
+        style: simple
+      - description: ID token
+        example: deadbeef
+        explode: false
+        in: header
+        name: X-Id-Token
+        required: true
+        schema:
+          description: ID token
+          example: deadbeef
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            example:
+              admin: admin
+              expiry: 8760h
+              format: k8s-secret
+            schema:
+              $ref: '#/components/schemas/CreateKeyPayload2'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              example:
+                format: raw-api-key
+                key: deadbeef
+                signature: 1234567890abcdefg
+                version: v2
+              schema:
+                $ref: '#/components/schemas/GeneratedKey'
+          description: Created response.
+        "400":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "bad_request: Bad Request response."
+        "401":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Unauthorized: Unauthorized response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: create key
+      tags:
+      - key
+  /key/$revoke:
+    put:
+      description: Revoke a key
+      operationId: key#revoke
+      requestBody:
+        content:
+          application/json:
+            example:
+              key: deadbeef
+            schema:
+              $ref: '#/components/schemas/RevokeKeyPayload'
+        required: true
+      responses:
+        "204":
+          description: No Content response.
+        "401":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Unauthorized: Unauthorized response."
+        "403":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "invalid_key: Forbidden response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: revoke key
+      tags:
+      - key
+  /key/$verify:
+    post:
+      description: Verify a key
+      operationId: key#verify
+      requestBody:
+        content:
+          application/json:
+            example:
+              key: deadbeef
+            schema:
+              $ref: '#/components/schemas/InputKeyPayload'
+        required: true
+      responses:
+        "204":
+          description: No Content response.
+        "401":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Unauthorized: Unauthorized response."
+        "403":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "invalid_key: Forbidden response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: verify key
+      tags:
+      - key
+  /key/{keyId}:
+    get:
+      description: Get information about a key
+      operationId: key#get
+      parameters:
+      - description: Key ID
+        example: a87b5407-dd02-42af-ac60-80bdf13f9696
+        explode: false
+        in: path
+        name: keyId
+        required: true
+        schema:
+          description: Key ID
+          example: a87b5407-dd02-42af-ac60-80bdf13f9696
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                actor: admin
+                description: This key is used for K3S
+                id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                last_used: 2024-10-01T15:04:05Z
+                revoked_at: 2024-12-01T15:04:05Z
+                scopes: "logdrain,logs"
+                signature: 1234567890abcdefg
+                tenant: foo
+              schema:
+                $ref: '#/components/schemas/TenantAPIKey'
+          description: OK response.
+        "401":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Unauthorized: Unauthorized response."
+        "403":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "invalid_key: Forbidden response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: get key
+      tags:
+      - key
+  /ready:
+    get:
+      description: Check service readiness
+      operationId: status#ready
+      responses:
+        "200":
+          content:
+            application/json:
+              example: Doloribus earum eos.
+              schema:
+                example: Eius autem natus explicabo porro et voluptatem.
+                type: string
+          description: OK response.
+      summary: ready status
+      tags:
+      - status
+  /tenants:
+    get:
+      description: Get all tenants
+      operationId: tenant#list
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                tenants:
+                - admin_claim: philips-internal:ien-observability-ops
+                  admins: "admin1,admin2"
+                  editor_claim: philips-internal:bu-grafana-editors
+                  guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                  id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                  log_retention_period: 168h
+                  logging: true
+                  metrics: true
+                  metrics_retention_period: 168h
+                  name: foo
+                  org_id: 42
+                  profiles: true
+                  trace_retention_period: 168h
+                  tracing: true
+                  viewer_claim: philips-internal:bu-grafana-viewers
+                - admin_claim: philips-internal:ien-observability-ops
+                  admins: "admin1,admin2"
+                  editor_claim: philips-internal:bu-grafana-editors
+                  guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                  id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                  log_retention_period: 168h
+                  logging: true
+                  metrics: true
+                  metrics_retention_period: 168h
+                  name: foo
+                  org_id: 42
+                  profiles: true
+                  trace_retention_period: 168h
+                  tracing: true
+                  viewer_claim: philips-internal:bu-grafana-viewers
+                - admin_claim: philips-internal:ien-observability-ops
+                  admins: "admin1,admin2"
+                  editor_claim: philips-internal:bu-grafana-editors
+                  guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                  id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                  log_retention_period: 168h
+                  logging: true
+                  metrics: true
+                  metrics_retention_period: 168h
+                  name: foo
+                  org_id: 42
+                  profiles: true
+                  trace_retention_period: 168h
+                  tracing: true
+                  viewer_claim: philips-internal:bu-grafana-viewers
+                - admin_claim: philips-internal:ien-observability-ops
+                  admins: "admin1,admin2"
+                  editor_claim: philips-internal:bu-grafana-editors
+                  guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                  id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                  log_retention_period: 168h
+                  logging: true
+                  metrics: true
+                  metrics_retention_period: 168h
+                  name: foo
+                  org_id: 42
+                  profiles: true
+                  trace_retention_period: 168h
+                  tracing: true
+                  viewer_claim: philips-internal:bu-grafana-viewers
+              schema:
+                $ref: '#/components/schemas/Tenantlist'
+          description: OK response.
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: list tenant
+      tags:
+      - tenant
+    post:
+      description: Create new tenant
+      operationId: tenant#create
+      requestBody:
+        content:
+          application/json:
+            example:
+              admin_claim: philips-internal:ien-observability-ops
+              admins: "admin1,admin2"
+              editor_claim: philips-internal:bu-grafana-editors
+              guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+              log_retention_period: 2160h
+              logging: true
+              metrics: true
+              metrics_retention_period: 720h
+              name: foo
+              trace_retention_period: 720h
+              tracing: true
+              viewer_claim: philips-internal:bu-grafana-viewers
+            schema:
+              $ref: '#/components/schemas/CreateTenantPayload'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              example:
+                admin_claim: philips-internal:ien-observability-ops
+                admins: "admin1,admin2"
+                editor_claim: philips-internal:bu-grafana-editors
+                guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                log_retention_period: 168h
+                logging: true
+                metrics: true
+                metrics_retention_period: 168h
+                name: foo
+                org_id: 42
+                profiles: true
+                trace_retention_period: 168h
+                tracing: true
+                viewer_claim: philips-internal:bu-grafana-viewers
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: Created response.
+        "400":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "BadRequest: Bad Request response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: create tenant
+      tags:
+      - tenant
+  /tenants/{tenantId}:
+    delete:
+      description: Delete a tenant
+      operationId: tenant#delete
+      parameters:
+      - description: Tenant ID
+        example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+        explode: false
+        in: path
+        name: tenantId
+        required: true
+        schema:
+          description: Tenant ID
+          example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+          type: string
+        style: simple
+      responses:
+        "204":
+          description: No Content response.
+      summary: delete tenant
+      tags:
+      - tenant
+    get:
+      description: Get tenant details
+      operationId: tenant#get
+      parameters:
+      - description: Tenant ID
+        example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+        explode: false
+        in: path
+        name: tenantId
+        required: true
+        schema:
+          description: Tenant ID
+          example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                admin_claim: philips-internal:ien-observability-ops
+                admins: "admin1,admin2"
+                editor_claim: philips-internal:bu-grafana-editors
+                guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                log_retention_period: 168h
+                logging: true
+                metrics: true
+                metrics_retention_period: 168h
+                name: foo
+                org_id: 42
+                profiles: true
+                trace_retention_period: 168h
+                tracing: true
+                viewer_claim: philips-internal:bu-grafana-viewers
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: OK response.
+        "400":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "BadRequest: Bad Request response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: get tenant
+      tags:
+      - tenant
+    put:
+      description: Update existing tenant
+      operationId: tenant#update
+      parameters:
+      - description: Tenant ID
+        example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+        explode: false
+        in: path
+        name: tenantId
+        required: true
+        schema:
+          description: Tenant ID
+          example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            example:
+              admin_claim: philips-internal:ien-observability-ops
+              admins: "admin1,admin2"
+              editor_claim: philips-internal:bu-grafana-editors
+              log_retention_period: 30d
+              logging: true
+              metrics: true
+              metrics_retention_period: 7d
+              trace_retention_period: 30d
+              tracing: true
+              viewer_claim: philips-internal:bu-grafana-viewers
+            schema:
+              $ref: '#/components/schemas/UpdateTenantPayload2'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                admin_claim: philips-internal:ien-observability-ops
+                admins: "admin1,admin2"
+                editor_claim: philips-internal:bu-grafana-editors
+                guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                log_retention_period: 168h
+                logging: true
+                metrics: true
+                metrics_retention_period: 168h
+                name: foo
+                org_id: 42
+                profiles: true
+                trace_retention_period: 168h
+                tracing: true
+                viewer_claim: philips-internal:bu-grafana-viewers
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: OK response.
+        "400":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "BadRequest: Bad Request response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: update tenant
+      tags:
+      - tenant
+  /tenants/billing_event:
+    post:
+      description: Billing event
+      operationId: tenant#billing_event
+      parameters:
+      - description: "Organization, also known as tenant"
+        example: homelab
+        explode: false
+        in: header
+        name: X-Scope-OrgId
+        required: true
+        schema:
+          description: "Organization, also known as tenant"
+          example: homelab
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            example:
+              count: 10
+              service: loki
+              source: logdrainer
+              timestamp: 2021-07-01T00:00:00Z
+              unit: B
+              value: 12345
+            schema:
+              $ref: '#/components/schemas/InputBillingEvent2'
+        required: true
+      responses:
+        "204":
+          description: No Content response.
+        "400":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "BadRequest: Bad Request response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: billing_event tenant
+      tags:
+      - tenant
+  /tenants/onboard:
+    post:
+      description: Onboard a tenant
+      operationId: tenant#onboard
+      parameters:
+      - description: ID token
+        example: deadbeef
+        explode: false
+        in: header
+        name: X-Id-Token
+        required: true
+        schema:
+          description: ID token
+          example: deadbeef
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            example:
+              admins: "admin1,admin2"
+              aws_region: eu-west-1
+              gh_editor_team: philips-internal:bu-grafana-editors
+              gh_viewer_team: philips-internal:bu-grafana-viewers
+              iam_org_id: 073ade7b-828d-485e-aee5-74aba9b98474
+              log_retention: 30d
+              metrics_retention: 30d
+              name: my-tenant
+              trace_retention: 7d
+            schema:
+              $ref: '#/components/schemas/OnboardTenantPayload2'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              example:
+                admin_claim: philips-internal:ien-observability-ops
+                admins: "admin1,admin2"
+                editor_claim: philips-internal:bu-grafana-editors
+                guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+                id: a87b5407-dd02-42af-ac60-80bdf13f9696
+                log_retention_period: 168h
+                logging: true
+                metrics: true
+                metrics_retention_period: 168h
+                name: foo
+                org_id: 42
+                profiles: true
+                trace_retention_period: 168h
+                tracing: true
+                viewer_claim: philips-internal:bu-grafana-viewers
+              schema:
+                $ref: '#/components/schemas/Tenant'
+          description: Created response.
+        "401":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "Unauthorized: Unauthorized response."
+        "500":
+          content:
+            application/vnd.goa.error:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: "InternalServerError: Internal Server Error response."
+      summary: onboard tenant
+      tags:
+      - tenant
+  /tenants/sync:
+    post:
+      description: Sync tenants
+      operationId: tenant#sync
+      responses:
+        "204":
+          description: No Content response.
+      summary: sync tenant
+      tags:
+      - tenant
+components:
+  schemas:
+    CreateKeyPayload:
+      example:
+        admin: admin
+        expiry: 8760h
+        format: k8s-secret
+        id_token: deadbeef
+        tenant: foo
+      properties:
+        admin:
+          description: The admin user
+          example: admin
+          type: string
+        expiry:
+          description: Expiry time time.Duration format. A value of 0s means no expiry
+          example: 8760h
+          type: string
+        format:
+          description: The format of the key
+          enum:
+          - k8s-secret
+          - raw-api-key
+          - logdrain-url
+          example: k8s-secret
+          type: string
+        id_token:
+          description: ID token
+          example: deadbeef
+          type: string
+        tenant:
+          description: Name of the tenant
+          example: foo
+          type: string
+      required:
+      - admin
+      - expiry
+      - format
+      - id_token
+      - tenant
+      type: object
+    CreateKeyPayload2:
+      example:
+        admin: admin
+        expiry: 8760h
+        format: k8s-secret
+      properties:
+        admin:
+          description: The admin user
+          example: admin
+          type: string
+        expiry:
+          description: Expiry time time.Duration format. A value of 0s means no expiry
+          example: 8760h
+          type: string
+        format:
+          description: The format of the key
+          enum:
+          - k8s-secret
+          - raw-api-key
+          - logdrain-url
+          example: k8s-secret
+          type: string
+      required:
+      - admin
+      - expiry
+      - format
+      type: object
+    CreateTenantPayload:
+      example:
+        admin_claim: philips-internal:ien-observability-ops
+        admins: "admin1,admin2"
+        editor_claim: philips-internal:bu-grafana-editors
+        guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+        log_retention_period: 2160h
+        logging: true
+        metrics: true
+        metrics_retention_period: 720h
+        name: foo
+        trace_retention_period: 720h
+        tracing: true
+        viewer_claim: philips-internal:bu-grafana-viewers
+      properties:
+        admin_claim:
+          description: The admin claim of the tenant
+          example: philips-internal:ien-observability-ops
+          type: string
+        admins:
+          description: Command separated list of admins
+          example: "admin1,admin2"
+          type: string
+        editor_claim:
+          description: The editor claim of the tenant
+          example: philips-internal:bu-grafana-editors
+          type: string
+        guid:
+          description: The GUID of the IDP
+          example: aac48e8e-78f0-4fab-962e-901113d8fcef
+          format: uuid
+          type: string
+        log_retention_period:
+          description: The log retention period of the tenant
+          example: 2160h
+          type: string
+        logging:
+          description: Logging support enabled for this tenant
+          example: true
+          type: boolean
+        metrics:
+          description: Metrics support enabled for this tenant
+          example: true
+          type: boolean
+        metrics_retention_period:
+          description: The metrics retention period of the tenant
+          example: 720h
+          type: string
+        name:
+          description: Name of the tenant
+          example: foo
+          type: string
+        trace_retention_period:
+          description: The trace retention period of the tenant
+          example: 720h
+          type: string
+        tracing:
+          description: Tracing support enabled for this tenant
+          example: true
+          type: boolean
+        viewer_claim:
+          description: The viewer claim of the tenant
+          example: philips-internal:bu-grafana-viewers
+          type: string
+      required:
+      - guid
+      - name
+      type: object
+    Error:
+      example:
+        fault: false
+        id: 123abc
+        message: parameter 'p' must be an integer
+        name: bad_request
+        temporary: true
+        timeout: true
+      properties:
+        fault:
+          description: Is the error a server-side fault?
+          example: false
+          type: boolean
+        id:
+          description: ID is a unique identifier for this particular occurrence of
+            the problem.
+          example: 123abc
+          type: string
+        message:
+          description: Message is a human-readable explanation specific to this occurrence
+            of the problem.
+          example: parameter 'p' must be an integer
+          type: string
+        name:
+          description: Name is the name of this class of errors.
+          example: bad_request
+          type: string
+        temporary:
+          description: Is the error temporary?
+          example: true
+          type: boolean
+        timeout:
+          description: Is the error a timeout?
+          example: false
+          type: boolean
+      required:
+      - fault
+      - id
+      - message
+      - name
+      - temporary
+      - timeout
+      type: object
+    GeneratedKey:
+      example:
+        format: raw-api-key
+        key: deadbeef
+        signature: 1234567890abcdefg
+        version: v2
+      properties:
+        format:
+          description: The format of the key
+          enum:
+          - k8s-secret
+          - raw-api-key
+          - logdrain-url
+          example: raw-api-key
+          type: string
+        key:
+          description: The generated key
+          example: deadbeef
+          type: string
+        signature:
+          description: The signature of the key
+          example: 1234567890abcdefg
+          type: string
+        version:
+          description: The version of the key
+          example: v2
+          type: string
+      type: object
+    InputBillingEvent:
+      example:
+        count: 10
+        organization: homelab
+        service: loki
+        source: logdrainer
+        timestamp: 2021-07-01T00:00:00Z
+        unit: B
+        value: 12345
+      properties:
+        count:
+          description: Count
+          example: 10
+          format: int64
+          type: integer
+        organization:
+          description: "Organization, also known as tenant"
+          example: homelab
+          type: string
+        service:
+          description: Service
+          example: loki
+          type: string
+        source:
+          description: Source of the event
+          example: logdrainer
+          type: string
+        timestamp:
+          description: Timestamp
+          example: 2021-07-01T00:00:00Z
+          type: string
+        unit:
+          description: "Unit of value (B, MB, GB). Default is `B`"
+          example: B
+          type: string
+        value:
+          description: Value
+          example: 12345
+          format: int64
+          type: integer
+      required:
+      - count
+      - organization
+      - service
+      - timestamp
+      - value
+      type: object
+    InputBillingEvent2:
+      example:
+        count: 10
+        service: loki
+        source: logdrainer
+        timestamp: 2021-07-01T00:00:00Z
+        unit: B
+        value: 12345
+      properties:
+        count:
+          description: Count
+          example: 10
+          format: int64
+          type: integer
+        service:
+          description: Service
+          example: loki
+          type: string
+        source:
+          description: Source of the event
+          example: logdrainer
+          type: string
+        timestamp:
+          description: Timestamp
+          example: 2021-07-01T00:00:00Z
+          type: string
+        unit:
+          description: "Unit of value (B, MB, GB). Default is `B`"
+          example: B
+          type: string
+        value:
+          description: Value
+          example: 12345
+          format: int64
+          type: integer
+      required:
+      - count
+      - service
+      - timestamp
+      - value
+      type: object
+    InputKeyPayload:
+      example:
+        key: deadbeef
+      properties:
+        key:
+          description: The key to verify
+          example: deadbeef
+          type: string
+      required:
+      - key
+      type: object
+    OnboardTenantPayload:
+      example:
+        admins: "admin1,admin2"
+        aws_region: eu-west-1
+        gh_editor_team: philips-internal:bu-grafana-editors
+        gh_viewer_team: philips-internal:bu-grafana-viewers
+        iam_org_id: 073ade7b-828d-485e-aee5-74aba9b98474
+        id_token: deadbeef
+        log_retention: 30d
+        metrics_retention: 30d
+        name: my-tenant
+        trace_retention: 7d
+      properties:
+        admins:
+          description: Comma separated list of authorized admins
+          example: "admin1,admin2"
+          type: string
+        aws_region:
+          description: The AWS region to onboard onto
+          example: eu-west-1
+          type: string
+        gh_editor_team:
+          description: The GitHub editor team
+          example: philips-internal:bu-grafana-editors
+          type: string
+        gh_viewer_team:
+          description: The GitHub viewer team
+          example: philips-internal:bu-grafana-viewers
+          type: string
+        iam_org_id:
+          description: The IAM Org ID
+          example: 073ade7b-828d-485e-aee5-74aba9b98474
+          type: string
+        id_token:
+          description: ID token
+          example: deadbeef
+          type: string
+        log_retention:
+          description: The log retention period of the tenant
+          example: 30d
+          type: string
+        metrics_retention:
+          description: The metrics retention period of the tenant
+          example: 30d
+          type: string
+        name:
+          description: Tenant name
+          example: my-tenant
+          type: string
+        trace_retention:
+          description: The tracing retention period of the tenant
+          example: 7d
+          type: string
+      required:
+      - aws_region
+      - id_token
+      - name
+      type: object
+    OnboardTenantPayload2:
+      example:
+        admins: "admin1,admin2"
+        aws_region: eu-west-1
+        gh_editor_team: philips-internal:bu-grafana-editors
+        gh_viewer_team: philips-internal:bu-grafana-viewers
+        iam_org_id: 073ade7b-828d-485e-aee5-74aba9b98474
+        log_retention: 30d
+        metrics_retention: 30d
+        name: my-tenant
+        trace_retention: 7d
+      properties:
+        admins:
+          description: Comma separated list of authorized admins
+          example: "admin1,admin2"
+          type: string
+        aws_region:
+          description: The AWS region to onboard onto
+          example: eu-west-1
+          type: string
+        gh_editor_team:
+          description: The GitHub editor team
+          example: philips-internal:bu-grafana-editors
+          type: string
+        gh_viewer_team:
+          description: The GitHub viewer team
+          example: philips-internal:bu-grafana-viewers
+          type: string
+        iam_org_id:
+          description: The IAM Org ID
+          example: 073ade7b-828d-485e-aee5-74aba9b98474
+          type: string
+        log_retention:
+          description: The log retention period of the tenant
+          example: 30d
+          type: string
+        metrics_retention:
+          description: The metrics retention period of the tenant
+          example: 30d
+          type: string
+        name:
+          description: Tenant name
+          example: my-tenant
+          type: string
+        trace_retention:
+          description: The tracing retention period of the tenant
+          example: 7d
+          type: string
+      required:
+      - aws_region
+      - name
+      type: object
+    RevokeKeyPayload:
+      example:
+        key: deadbeef
+      properties:
+        key:
+          description: The key to revoke
+          example: deadbeef
+          type: string
+      required:
+      - key
+      type: object
+    Tenant:
+      example:
+        admin_claim: philips-internal:ien-observability-ops
+        admins: "admin1,admin2"
+        editor_claim: philips-internal:bu-grafana-editors
+        guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+        id: a87b5407-dd02-42af-ac60-80bdf13f9696
+        log_retention_period: 168h
+        logging: true
+        metrics: true
+        metrics_retention_period: 168h
+        name: foo
+        org_id: 42
+        profiles: true
+        trace_retention_period: 168h
+        tracing: true
+        viewer_claim: philips-internal:bu-grafana-viewers
+      properties:
+        admin_claim:
+          description: The admin claim of the tenant
+          example: philips-internal:ien-observability-ops
+          type: string
+        admins:
+          description: Comma separated list of admins
+          example: "admin1,admin2"
+          type: string
+        editor_claim:
+          description: The editor claim of the tenant
+          example: philips-internal:bu-grafana-editors
+          type: string
+        guid:
+          description: The GUID of the IDP
+          example: aac48e8e-78f0-4fab-962e-901113d8fcef
+          format: uuid
+          type: string
+        id:
+          description: Unique account identifier
+          example: a87b5407-dd02-42af-ac60-80bdf13f9696
+          type: string
+        log_retention_period:
+          description: "The log retention period of the tenant, format is Go's time.Duration"
+          example: 168h
+          type: string
+        logging:
+          description: Logging enabled
+          example: true
+          type: boolean
+        metrics:
+          description: Metrics enabled
+          example: true
+          type: boolean
+        metrics_retention_period:
+          description: "The metrics retention period of the tenant, format is Go's\
+            \ time.Duration"
+          example: 168h
+          type: string
+        name:
+          description: Name of the tenant
+          example: foo
+          type: string
+        org_id:
+          description: The Org ID of the application
+          example: 42
+          format: int64
+          type: integer
+        profiles:
+          description: Profiles enabled
+          example: true
+          type: boolean
+        trace_retention_period:
+          description: "The trace retention period of the tenant, format is Go's time.Duration"
+          example: 168h
+          type: string
+        tracing:
+          description: Tracing enabled
+          example: true
+          type: boolean
+        viewer_claim:
+          description: The viewer claim of the tenant
+          example: philips-internal:bu-grafana-viewers
+          type: string
+      type: object
+    TenantAPIKey:
+      example:
+        actor: admin
+        description: This key is used for K3S
+        id: a87b5407-dd02-42af-ac60-80bdf13f9696
+        last_used: 2024-10-01T15:04:05Z
+        revoked_at: 2024-12-01T15:04:05Z
+        scopes: "logdrain,logs"
+        signature: 1234567890abcdefg
+        tenant: foo
+      properties:
+        actor:
+          description: Who created this key
+          example: admin
+          type: string
+        description:
+          description: Description of the key
+          example: This key is used for K3S
+          type: string
+        id:
+          description: Unique key identifier
+          example: a87b5407-dd02-42af-ac60-80bdf13f9696
+          type: string
+        last_used:
+          description: Last use of this key
+          example: 2024-10-01T15:04:05Z
+          type: string
+        revoked_at:
+          description: When this key was revoked
+          example: 2024-12-01T15:04:05Z
+          type: string
+        scopes:
+          description: Scopes of the key
+          example: "logdrain,logs"
+          type: string
+        signature:
+          description: Signature of the key
+          example: 1234567890abcdefg
+          type: string
+        tenant:
+          description: Name of the tenant this key belongs to
+          example: foo
+          type: string
+      type: object
+    Tenantlist:
+      example:
+        tenants:
+        - admin_claim: philips-internal:ien-observability-ops
+          admins: "admin1,admin2"
+          editor_claim: philips-internal:bu-grafana-editors
+          guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+          id: a87b5407-dd02-42af-ac60-80bdf13f9696
+          log_retention_period: 168h
+          logging: true
+          metrics: true
+          metrics_retention_period: 168h
+          name: foo
+          org_id: 42
+          profiles: true
+          trace_retention_period: 168h
+          tracing: true
+          viewer_claim: philips-internal:bu-grafana-viewers
+        - admin_claim: philips-internal:ien-observability-ops
+          admins: "admin1,admin2"
+          editor_claim: philips-internal:bu-grafana-editors
+          guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+          id: a87b5407-dd02-42af-ac60-80bdf13f9696
+          log_retention_period: 168h
+          logging: true
+          metrics: true
+          metrics_retention_period: 168h
+          name: foo
+          org_id: 42
+          profiles: true
+          trace_retention_period: 168h
+          tracing: true
+          viewer_claim: philips-internal:bu-grafana-viewers
+      properties:
+        tenants:
+          description: List of tenants
+          example:
+          - admin_claim: philips-internal:ien-observability-ops
+            admins: "admin1,admin2"
+            editor_claim: philips-internal:bu-grafana-editors
+            guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+            id: a87b5407-dd02-42af-ac60-80bdf13f9696
+            log_retention_period: 168h
+            logging: true
+            metrics: true
+            metrics_retention_period: 168h
+            name: foo
+            org_id: 42
+            profiles: true
+            trace_retention_period: 168h
+            tracing: true
+            viewer_claim: philips-internal:bu-grafana-viewers
+          - admin_claim: philips-internal:ien-observability-ops
+            admins: "admin1,admin2"
+            editor_claim: philips-internal:bu-grafana-editors
+            guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+            id: a87b5407-dd02-42af-ac60-80bdf13f9696
+            log_retention_period: 168h
+            logging: true
+            metrics: true
+            metrics_retention_period: 168h
+            name: foo
+            org_id: 42
+            profiles: true
+            trace_retention_period: 168h
+            tracing: true
+            viewer_claim: philips-internal:bu-grafana-viewers
+          - admin_claim: philips-internal:ien-observability-ops
+            admins: "admin1,admin2"
+            editor_claim: philips-internal:bu-grafana-editors
+            guid: aac48e8e-78f0-4fab-962e-901113d8fcef
+            id: a87b5407-dd02-42af-ac60-80bdf13f9696
+            log_retention_period: 168h
+            logging: true
+            metrics: true
+            metrics_retention_period: 168h
+            name: foo
+            org_id: 42
+            profiles: true
+            trace_retention_period: 168h
+            tracing: true
+            viewer_claim: philips-internal:bu-grafana-viewers
+          items:
+            $ref: '#/components/schemas/Tenant'
+          type: array
+      required:
+      - tenants
+      type: object
+    UpdateTenantPayload:
+      example:
+        admin_claim: philips-internal:ien-observability-ops
+        admins: "admin1,admin2"
+        editor_claim: philips-internal:bu-grafana-editors
+        log_retention_period: 30d
+        logging: true
+        metrics: true
+        metrics_retention_period: 7d
+        tenantId: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+        trace_retention_period: 30d
+        tracing: true
+        viewer_claim: philips-internal:bu-grafana-viewers
+      properties:
+        admin_claim:
+          description: The admin claim of the tenant
+          example: philips-internal:ien-observability-ops
+          type: string
+        admins:
+          description: Comma separated list of admins
+          example: "admin1,admin2"
+          type: string
+        editor_claim:
+          description: The editor claim of the tenant
+          example: philips-internal:bu-grafana-editors
+          type: string
+        log_retention_period:
+          description: The log retention period of the tenant
+          example: 30d
+          type: string
+        logging:
+          description: Logging support enabled for this tenant
+          example: true
+          type: boolean
+        metrics:
+          description: Metrics support enabled for this tenant
+          example: true
+          type: boolean
+        metrics_retention_period:
+          description: The metrics retention period of the tenant
+          example: 7d
+          type: string
+        tenantId:
+          description: Tenant ID
+          example: 18ee082f-1d61-40d3-b8a2-f4eee67cefff
+          type: string
+        trace_retention_period:
+          description: The trace retention period of the tenant
+          example: 30d
+          type: string
+        tracing:
+          description: Tracing support enabled for this tenant
+          example: true
+          type: boolean
+        viewer_claim:
+          description: The viewer claim of the tenant
+          example: philips-internal:bu-grafana-viewers
+          type: string
+      required:
+      - tenantId
+      type: object
+    UpdateTenantPayload2:
+      example:
+        admin_claim: philips-internal:ien-observability-ops
+        admins: "admin1,admin2"
+        editor_claim: philips-internal:bu-grafana-editors
+        log_retention_period: 30d
+        logging: true
+        metrics: true
+        metrics_retention_period: 7d
+        trace_retention_period: 30d
+        tracing: true
+        viewer_claim: philips-internal:bu-grafana-viewers
+      properties:
+        admin_claim:
+          description: The admin claim of the tenant
+          example: philips-internal:ien-observability-ops
+          type: string
+        admins:
+          description: Comma separated list of admins
+          example: "admin1,admin2"
+          type: string
+        editor_claim:
+          description: The editor claim of the tenant
+          example: philips-internal:bu-grafana-editors
+          type: string
+        log_retention_period:
+          description: The log retention period of the tenant
+          example: 30d
+          type: string
+        logging:
+          description: Logging support enabled for this tenant
+          example: true
+          type: boolean
+        metrics:
+          description: Metrics support enabled for this tenant
+          example: true
+          type: boolean
+        metrics_retention_period:
+          description: The metrics retention period of the tenant
+          example: 7d
+          type: string
+        trace_retention_period:
+          description: The trace retention period of the tenant
+          example: 30d
+          type: string
+        tracing:
+          description: Tracing support enabled for this tenant
+          example: true
+          type: boolean
+        viewer_claim:
+          description: The viewer claim of the tenant
+          example: philips-internal:bu-grafana-viewers
+          type: string
+      type: object
